@@ -405,3 +405,268 @@ dot_data = export_graphviz(melhor, out_file=None, filled=True, rounded=True,
 graph = graphviz.Source(dot_data)
 graph
 
+"""# Busca aleatória: RandomSearch"""
+
+from sklearn.model_selection import RandomizedSearchCV
+
+SEED=301
+np.random.seed(SEED)
+
+espaco_de_parametros = {
+    "max_depth" : [3, 5],
+    "min_samples_split" : [32, 64, 128],
+    "min_samples_leaf" : [32, 64, 128],
+    "criterion" : ["gini", "entropy"]
+}
+
+busca = RandomizedSearchCV(DecisionTreeClassifier(),
+                    espaco_de_parametros,
+                    n_iter = 16,
+                    cv = KFold(n_splits = 5, shuffle=True),
+                    random_state = SEED)
+busca.fit(x_azar, y_azar)
+resultados = pd.DataFrame(busca.cv_results_)
+resultados.head()
+
+scores = cross_val_score(busca, x_azar, y_azar, cv = KFold(n_splits=5, shuffle=True))
+imprime_score(scores)
+
+melhor = busca.best_estimator_
+print(melhor)
+
+features = x_azar.columns
+dot_data = export_graphviz(melhor, out_file=None, filled=True, rounded=True,
+                          class_names=["não","sim"],
+                          feature_names = features)
+graph = graphviz.Source(dot_data)
+graph
+
+"""# Customizando o espaço de hiper parâmetros"""
+
+from scipy.stats import randint
+
+SEED=301
+np.random.seed(SEED)
+
+espaco_de_parametros = {
+    "max_depth" : [3, 5, 10, 15, 20, 30, None],
+    "min_samples_split" : randint(32, 128),
+    "min_samples_leaf" : randint(32, 128),
+    "criterion" : ["gini", "entropy"]
+}
+
+busca = RandomizedSearchCV(DecisionTreeClassifier(),
+                    espaco_de_parametros,
+                    n_iter = 16,
+                    cv = KFold(n_splits = 5, shuffle=True),
+                    random_state = SEED)
+busca.fit(x_azar, y_azar)
+resultados = pd.DataFrame(busca.cv_results_)
+resultados.head()
+
+scores = cross_val_score(busca, x_azar, y_azar, cv = KFold(n_splits=5, shuffle=True))
+imprime_score(scores)
+melhor = busca.best_estimator_
+print(melhor)
+
+resultados_ordenados_pela_media = resultados.sort_values("mean_test_score", ascending=False)
+for indice, linha in resultados_ordenados_pela_media.iterrows():
+  print("%.3f +-(%.3f) %s" % (linha.mean_test_score, linha.std_test_score*2, linha.params))
+
+"""# Uma exploração mais a fundo de forma aleatória"""
+
+from scipy.stats import randint
+
+SEED=564
+np.random.seed(SEED)
+
+espaco_de_parametros = {
+    "max_depth" : [3, 5, 10, 15, 20, 30, None],
+    "min_samples_split" : randint(32, 128),
+    "min_samples_leaf" : randint(32, 128),
+    "criterion" : ["gini", "entropy"]
+}
+
+busca = RandomizedSearchCV(DecisionTreeClassifier(),
+                    espaco_de_parametros,
+                    n_iter = 64,
+                    cv = KFold(n_splits = 5, shuffle=True),
+                    random_state = SEED)
+busca.fit(x_azar, y_azar)
+resultados = pd.DataFrame(busca.cv_results_)
+resultados.head()
+
+resultados_ordenados_pela_media = resultados.sort_values("mean_test_score", ascending=False)
+for indice, linha in resultados_ordenados_pela_media.iterrows():
+  print("%.3f +-(%.3f) %s" % (linha.mean_test_score, linha.std_test_score*2, linha.params))
+
+scores = cross_val_score(busca, x_azar, y_azar, cv = KFold(n_splits=5, shuffle=True))
+imprime_score(scores)
+melhor = busca.best_estimator_
+print(melhor)
+
+"""# Comparando GridSearchCV com RandomizedSearch (1 comparação)"""
+
+from sklearn.ensemble import RandomForestClassifier
+import time
+
+SEED=301
+np.random.seed(SEED)
+
+espaco_de_parametros = {
+    "n_estimators" : [10, 100],
+    "max_depth" : [3, 5],
+    "min_samples_split" : [32, 64, 128],
+    "min_samples_leaf" : [32, 64, 128],
+    "bootstrap" : [True, False],
+    "criterion" : ["gini", "entropy"]
+}
+
+tic = time.time()
+busca = GridSearchCV(RandomForestClassifier(),
+                    espaco_de_parametros,
+                    cv = KFold(n_splits = 5, shuffle=True))
+busca.fit(x_azar, y_azar)
+tac = time.time()
+tempo_que_passou = tac - tic
+print("Tempo %.2f segundos" % tempo_que_passou)
+
+
+resultados = pd.DataFrame(busca.cv_results_)
+resultados.head()
+
+resultados_ordenados_pela_media = resultados.sort_values("mean_test_score", ascending=False)
+for indice, linha in resultados_ordenados_pela_media[:5].iterrows():
+  print("%.3f +-(%.3f) %s" % (linha.mean_test_score, linha.std_test_score*2, linha.params))
+
+tic = time.time()
+scores = cross_val_score(busca, x_azar, y_azar, cv = KFold(n_splits=5, shuffle=True))
+tac = time.time()
+tempo_passado = tac - tic
+print("Tempo %.2f segundos" % tempo_passado)
+
+imprime_score(scores)
+melhor = busca.best_estimator_
+print(melhor)
+
+SEED=301
+np.random.seed(SEED)
+
+espaco_de_parametros = {
+    "n_estimators" : [10, 100],
+    "max_depth" : [3, 5],
+    "min_samples_split" : [32, 64, 128],
+    "min_samples_leaf" : [32, 64, 128],
+    "bootstrap" : [True, False],
+    "criterion" : ["gini", "entropy"]
+}
+
+tic = time.time()
+busca = RandomizedSearchCV(RandomForestClassifier(),
+                    espaco_de_parametros,
+                    n_iter = 20,
+                    cv = KFold(n_splits = 5, shuffle=True))
+busca.fit(x_azar, y_azar)
+tac = time.time()
+tempo_que_passou = tac - tic
+print("Tempo %.2f segundos" % tempo_que_passou)
+
+
+resultados = pd.DataFrame(busca.cv_results_)
+resultados.head()
+
+resultados_ordenados_pela_media = resultados.sort_values("mean_test_score", ascending=False)
+for indice, linha in resultados_ordenados_pela_media[:5].iterrows():
+  print("%.3f +-(%.3f) %s" % (linha.mean_test_score, linha.std_test_score*2, linha.params))
+
+tic = time.time()
+scores = cross_val_score(busca, x_azar, y_azar, cv = KFold(n_splits=5, shuffle=True))
+tac = time.time()
+tempo_passado = tac - tic
+print("Tempo %.2f segundos" % tempo_passado)
+
+imprime_score(scores)
+melhor = busca.best_estimator_
+print(melhor)
+
+SEED=301
+np.random.seed(SEED)
+
+espaco_de_parametros = {
+    "n_estimators" :randint(10, 101),
+    "max_depth" : randint(3, 6),
+    "min_samples_split" : randint(32, 129),
+    "min_samples_leaf" : randint(32, 129),
+    "bootstrap" : [True, False],
+    "criterion" : ["gini", "entropy"]
+}
+
+tic = time.time()
+busca = RandomizedSearchCV(RandomForestClassifier(),
+                    espaco_de_parametros,
+                    n_iter = 80,
+                    cv = KFold(n_splits = 5, shuffle=True))
+busca.fit(x_azar, y_azar)
+tac = time.time()
+tempo_que_passou = tac - tic
+print("Tempo %.2f segundos" % tempo_que_passou)
+
+
+resultados = pd.DataFrame(busca.cv_results_)
+resultados.head()
+
+resultados_ordenados_pela_media = resultados.sort_values("mean_test_score", ascending=False)
+for indice, linha in resultados_ordenados_pela_media[:5].iterrows():
+  print("%.3f +-(%.3f) %s" % (linha.mean_test_score, linha.std_test_score*2, linha.params))
+
+"""# Se eu não posso ou não consigo usar cross validation"""
+
+# 0.6 treino     => treino
+# 0.2 teste      => dev teste
+# 0.2 validacao  => validacao
+
+from sklearn.model_selection import train_test_split
+
+SEED=301
+np.random.seed(SEED)
+
+x_treino_teste, x_validacao, y_treino_teste, y_validacao = train_test_split(x_azar, y_azar, test_size=0.2, shuffle=True, stratify=y_azar)
+print(x_treino_teste.shape)
+print(x_validacao.shape)
+print(y_treino_teste.shape)
+print(y_validacao.shape)
+
+from sklearn.model_selection import StratifiedShuffleSplit
+
+espaco_de_parametros = {
+    "n_estimators" :randint(10, 101),
+    "max_depth" : randint(3, 6),
+    "min_samples_split" : randint(32, 129),
+    "min_samples_leaf" : randint(32, 129),
+    "bootstrap" : [True, False],
+    "criterion" : ["gini", "entropy"]
+}
+
+split = StratifiedShuffleSplit(n_splits = 1, test_size = 0.25)
+
+tic = time.time()
+busca = RandomizedSearchCV(RandomForestClassifier(),
+                    espaco_de_parametros,
+                    n_iter = 5,
+                    cv = split)
+busca.fit(x_treino_teste, y_treino_teste)
+tac = time.time()
+tempo_que_passou = tac - tic
+print("Tempo %.2f segundos" % tempo_que_passou)
+
+
+resultados = pd.DataFrame(busca.cv_results_)
+resultados.head()
+
+tic = time.time()
+scores = cross_val_score(busca, x_validacao, y_validacao, cv = split)
+tac = time.time()
+tempo_passado = tac - tic
+print("Tempo %.2f segundos" % tempo_passado)
+scores
+
